@@ -1,0 +1,13 @@
+import "@testing-library/jest-dom";
+import { render } from "@testing-library/react";
+import {{pascalCase name}} from "..";
+
+describe("Test {{pascalCase name}}", () => {
+  it("Renders without error", () => {
+    const props = {};
+    render(
+        <{{pascalCase name}} { ...props } />
+    );
+    expect(document.querySelector(".{{camelCase name}}")).toBeInTheDocument();
+  });
+});

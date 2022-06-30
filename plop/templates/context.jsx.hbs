@@ -1,0 +1,32 @@
+import { createContext, useContext, useEffect, useState } from "react";
+
+const context = {};
+const {{pascalCase name}} = createContext(context);
+
+export const use{{pascalCase name}}Context = () => useContext({{pascalCase name}});
+
+const useContextController = context => {
+  const [ctx, setContext] = useState(context);
+  useEffect(() => {
+    setContext(v => ({ ...v, rendered: true }));
+    // everything in here will be triggered twice by NextJS ...
+    // onRendered and onHydrated
+  }, []);
+
+  useEffect(() => {
+    if (!ctx.rendered) return;
+    setContext(v => ({ ...v, hydrated: true }));
+    // everything in here will be triggered only once ...
+    // onHydrated only
+  }, [ctx.rendered]);
+
+  return {
+    ...ctx,
+    setContext
+  };
+};
+
+export default function {{pascalCase name}}ContextProvider({ children, context }) {
+  const controlledContext = useContextController(context);
+  return <{{pascalCase name}}.Provider value={controlledContext}>{children}</{{pascalCase name}}.Provider>;
+}

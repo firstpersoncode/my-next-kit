@@ -1,0 +1,9 @@
+import {{pascalCase name}}ContextProvider from "./context";
+
+export default function {{pascalCase name}}(props) {
+  return (
+    <{{pascalCase name}}ContextProvider context={props}>
+      <div className="{{camelCase name}}">{{pascalCase name}}</div>
+    </{{pascalCase name}}ContextProvider>
+  );
+}
