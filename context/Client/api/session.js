@@ -1,20 +1,20 @@
 import axios from "axios";
 import { parse } from "next-useragent";
-import { PrismaClient } from "@prisma/client";
 import { sign } from "jsonwebtoken";
 import { serialize } from "cookie";
 import { add, format } from "date-fns";
 import getUrl from "../utils/getUrl";
+import prismaClient from "./prismaClient";
 import { context } from "..";
 
-const ValidateSession = ({ authorization }) => {
-  return authorization === `Bearer ${process.env.NEXTJS_SECRET_KEY}`;
+const validateSession = ({ authorization }) => {
+  return authorization === `Bearer ${process.env.API_SECRET_KEY}`;
 };
 
 export function withSession(handler, { methods = ["GET"], byPassSession = false, autoSignin = false }) {
   return async (req, res) => {
     if (!methods.includes(req.method)) return res.status(404).send();
-    if (!ValidateSession({ authorization: req.headers["authorization"] })) return res.status(403).send();
+    if (!validateSession({ authorization: req.headers["authorization"] })) return res.status(403).send();
 
     if (byPassSession) return handler(req, res);
 
@@ -31,12 +31,10 @@ export function withSession(handler, { methods = ["GET"], byPassSession = false,
 
 async function getSession(sjwt) {
   if (!sjwt) return;
-  const prisma = new PrismaClient();
-  await prisma.$connect();
-  const session = await prisma.session.findUnique({
+  const db = await prismaClient();
+  const session = await db.findUnique({
     where: { sjwt }
   });
-  await prisma.$disconnect();
 
   return session;
 }
@@ -46,27 +44,22 @@ const maxAge = 60 * 60 * 24 * days;
 
 export async function refreshSession(session) {
   const exp = add(new Date(), { days });
-
-  const prisma = new PrismaClient();
-  await prisma.$connect();
-
-  const refreshedSession = await prisma.session.update({
+  const db = await prismaClient();
+  const refreshedSession = await db.update({
     where: { sjwt: session.sjwt },
     data: { ...session, exp }
   });
 
-  await prisma.$disconnect();
-  return refreshedSession;
+  const token = serializeToken(refreshedSession.sjwt);
+  return token;
 }
 
 export async function createSession(uaString) {
   const userAgent = { ...parse(uaString) };
   const exp = add(new Date(), { days });
   const _sjwt = sign({ ...userAgent, exp: Number(format(new Date(exp), "t")) }, process.env.JWT_SECRET_KEY);
-
-  const prisma = new PrismaClient();
-  await prisma.$connect();
-  const newSession = await prisma.session.create({
+  const db = await prismaClient();
+  const newSession = await db.create({
     data: {
       exp,
       sjwt: _sjwt,
@@ -80,18 +73,19 @@ export async function createSession(uaString) {
       isBot: userAgent.isBot
     }
   });
-  await prisma.$disconnect();
-  return newSession;
+
+  const token = serializeToken(newSession.sjwt);
+  return token;
 }
 
 export async function deleteSession(session) {
-  const prisma = new PrismaClient();
-  await prisma.$connect();
-  await prisma.session.delete({ where: { sjwt: session.sjwt } });
-  await prisma.$disconnect();
+  const db = await prismaClient();
+  await db.delete({ where: { sjwt: session.sjwt } });
+  const token = serializeToken(null, -1);
+  return token;
 }
 
-export function serializeToken(sjwt, overrideMaxAge = maxAge) {
+function serializeToken(sjwt, overrideMaxAge = maxAge) {
   return serialize("_sjwt", sjwt, {
     secure: process.env.NODE_ENV !== "development",
     sameSite: "strict",
@@ -101,11 +95,11 @@ export function serializeToken(sjwt, overrideMaxAge = maxAge) {
 }
 
 export function refresh() {
-  return axios.get("/api/auth/refresh", { headers: { authorization: `Bearer ${process.env.NEXTJS_SECRET_KEY}` } });
+  return axios.get("/api/auth/refresh", { headers: { authorization: `Bearer ${process.env.API_SECRET_KEY}` } });
 }
 
 export function signin() {
-  return axios.get("/api/auth/signin", { headers: { authorization: `Bearer ${process.env.NEXTJS_SECRET_KEY}` } });
+  return axios.get("/api/auth/signin", { headers: { authorization: `Bearer ${process.env.API_SECRET_KEY}` } });
 }
 
 export async function getInitialClientContext(nextContext) {

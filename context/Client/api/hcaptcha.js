@@ -27,5 +27,5 @@ export function withCaptcha(handler, { byPassCaptcha = false }) {
 }
 
 export function verifyCaptcha(endpoint, body, captcha) {
-  return axios.post(`${endpoint}?captcha=${captcha}`, body, { headers: { authorization: `Bearer ${process.env.NEXTJS_SECRET_KEY}` } });
+  return axios.post(`${endpoint}?captcha=${captcha}`, body, { headers: { authorization: `Bearer ${process.env.API_SECRET_KEY}` } });
 }

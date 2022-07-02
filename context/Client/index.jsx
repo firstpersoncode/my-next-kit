@@ -32,15 +32,13 @@ const useContextController = context => {
   }, []);
 
   const refreshSession = async sessionModalMessage => {
-    if (ctx.session) return;
-
     try {
-      const response = await refresh();
-      const { data } = response;
-      setContext(v => ({ ...v, session: data, openSessionModal: false }));
+      await refresh();
+      setContext(v => ({ ...v, openSessionModal: false }));
     } catch (err) {
       console.error(err);
       setContext(v => ({ ...v, openSessionModal: true, sessionModalMessage }));
+      throw err;
     }
   };
 
@@ -51,12 +49,11 @@ const useContextController = context => {
 
   const onConfirmSession = async () => {
     try {
-      const response = await signin();
-      const { data } = response;
-      setContext(v => ({ ...v, session: data, openSessionModal: false }));
-      if (ctx.awaitRecaptchaExecute) {
-        captchaRef.current.execute();
-        setContext(v => ({ ...v, awaitRecaptchaExecute: false }));
+      await signin();
+      setContext(v => ({ ...v, openSessionModal: false }));
+      if (typeof ctx.onConfirmCallBack === "function") {
+        ctx.onConfirmCallBack();
+        setContext(v => ({ ...v, onConfirmCallBack: undefined }));
       }
     } catch (err) {
       console.error(err);
@@ -71,26 +68,28 @@ const useContextController = context => {
     captchaRef.current.resetCaptcha();
   };
 
-  const captchaExecute = async (endpoint, body, onSuccess, onError) => {
-    setContext(v => ({ ...v, endpoint, body, onSuccess, onError }));
+  const captchaExecute = async (endpoint, body, onCaptchaSuccess, onCaptchaError) => {
+    setContext(v => ({ ...v, endpoint, body, onCaptchaSuccess, onCaptchaError }));
 
-    if (!ctx.session) {
-      setContext(v => ({ ...v, awaitRecaptchaExecute: true }));
-      refreshSession("Accept cookie before continuing your action");
-    } else captchaRef.current.execute();
+    try {
+      await refreshSession("Accept cookie before continuing your action");
+      captchaRef.current.execute();
+    } catch (err) {
+      setContext(v => ({ ...v, onConfirmCallBack: () => captchaRef.current.execute() }));
+    }
   };
 
   const onCaptchaVerify = async captcha => {
     try {
       const response = await verifyCaptcha(ctx.endpoint, ctx.body, captcha);
-      if (typeof ctx.onSuccess === "function") {
-        ctx.onSuccess(response);
-        setContext(v => ({ ...v, onSuccess: undefined }));
+      if (typeof ctx.onCaptchaSuccess === "function") {
+        ctx.onCaptchaSuccess(response);
+        setContext(v => ({ ...v, onCaptchaSuccess: undefined }));
       }
     } catch (err) {
-      if (typeof ctx.onError === "function") {
-        ctx.onError(err);
-        setContext(v => ({ ...v, onError: undefined }));
+      if (typeof ctx.onCaptchaError === "function") {
+        ctx.onCaptchaError(err);
+        setContext(v => ({ ...v, onCaptchaError: undefined }));
       }
     } finally {
       resetCaptcha();

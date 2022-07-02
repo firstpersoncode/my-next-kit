@@ -12,7 +12,7 @@ model session {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   exp            DateTime
-  sjwt           String @unique
+  sjwt           String? @unique
   source         String
   deviceType     String?
   deviceVendor   String?

@@ -18,7 +18,7 @@ module.exports = {
     return config;
   },
   env: {
-    NEXTJS_SECRET_KEY: process.env.NEXTJS_SECRET_KEY,
+    API_SECRET_KEY: process.env.API_SECRET_KEY,
     JWT_SECRET_KEY: process.env.JWT_SECRET_KEY,
     CMS_ENDPOINT: process.env.CMS_ENDPOINT,
     HCAPTCHA_SECRET_KEY: process.env.HCAPTCHA_SECRET_KEY,

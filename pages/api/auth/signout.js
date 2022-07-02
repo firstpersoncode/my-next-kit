@@ -1,10 +1,9 @@
-import { withSession, deleteSession, serializeToken } from "context/Client/api/session";
+import { withSession, deleteSession } from "context/Client/api/session";
 
 export default withSession(async function signout(req, res) {
   try {
-    await deleteSession(req.session);
-    const cookie = serializeToken(null, -1);
-    res.setHeader("Set-Cookie", cookie);
+    const token = await deleteSession(req.session);
+    res.setHeader("Set-Cookie", token);
     return res.status(200).send("Session removed");
   } catch (err) {
     console.error(err);

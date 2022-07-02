@@ -3,6 +3,13 @@ import getAppName from "../utils/getAppName";
 import { context } from "..";
 import apolloClient from "./apolloClient";
 
+// export async function getInitialCmsContext(nextContext) {
+//   context.page = { id: "demo", components: [{ __typename: "ComponentDemo" }] };
+//   context.appName = getAppName(nextContext.req.headers.host);
+
+//   return context;
+// }
+
 const imageFields = `id
   alternativeText
   url
